@@ -11,3 +11,4 @@ AI_MODEL = os.getenv("AI_MODEL") # obteniendo el valor de la variable de entorno
 
 print(AI_API_KEY)
 print(AI_MODEL)
+
