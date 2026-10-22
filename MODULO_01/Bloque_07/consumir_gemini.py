@@ -1,39 +1,62 @@
 import os
+from pathlib import Path
+
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()
-
+load_dotenv(dotenv_path=Path(__file__).resolve().parents[1] / ".env")
 
 
 def armar_peticion(pregunta):
-    if(type(pregunta) != str):
+    if not isinstance(pregunta, str):
         raise ValueError("La pregunta debe ser una cadena de texto.")
-    api_key = os.getenv("AI_API_KEY")
-    modelo = "gemini-3.5-flash-lite"
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
+    modelo = os.getenv("AI_MODEL", "gemini-3.5-flash")
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{modelo}:generateContent"
+    )
     body = {"contents": [{"parts": [{"text": pregunta}]}]}
     return url, body
 
+
 def enviar_peticion(url, body):
-    respuesta = requests.post(url, json=body)
-    return respuesta.json()
+    api_key = os.getenv("AI_API_KEY_GENAI") or os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "Falta configurar AI_API_KEY_GENAI o GEMINI_API_KEY en el archivo .env"
+        )
+
+    try:
+        respuesta = requests.post(
+            url,
+            headers={"x-goog-api-key": api_key},
+            json=body,
+            timeout=30,
+        )
+    except requests.exceptions.ConnectionError as error:
+        raise RuntimeError(
+            "No se pudo conectar con el servicio. Intenta de nuevo en unos segundos."
+        ) from error
+
+    respuesta.raise_for_status()
+
+    try:
+        return respuesta.json()
+    except requests.exceptions.JSONDecodeError as error:
+        raise RuntimeError(
+            "La respuesta del servicio no llegó en el formato esperado."
+        ) from error
 
 def extraer_texto(datos):
-    return datos["candidates"][0]["content"]["parts"][0]["text"]
+    try:
+        return datos["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError) as error:
+        raise RuntimeError(
+            "La respuesta no trae el texto generado en el lugar esperado."
+        ) from error
+
 
 def obtener_dato_de_prueba(pregunta):
-    try:
-        url, body = armar_peticion(pregunta)
-        datos = enviar_peticion(url, body)
-        return extraer_texto(datos)
-    except KeyError as e:
-        print(f"Error al extraer el dato de prueba: {e}")
-        return None
-    except Exception as e:
-        print(f"Error inesperado: {e}")
-        return None
-
-# Ejemplo de uso
-if __name__ == "__main__":
-    print(obtener_dato_de_prueba("¿Cuál es la capital de Escocia?"))
+    url, body = armar_peticion(pregunta)
+    datos = enviar_peticion(url, body)
+    return extraer_texto(datos)
