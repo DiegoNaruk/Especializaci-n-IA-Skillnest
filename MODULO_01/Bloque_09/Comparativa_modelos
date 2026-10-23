@@ -1,0 +1,31 @@
+from tabulate import tabulate
+
+def mostrar_tabla_comparativa():
+    # Definición de los datos comparativos (Costos por 1 millón de tokens en USD)
+    # Nota: Gemini 3.8 Flash cuenta con tarifas diferenciadas vigentes hasta el 31-12-2026.
+    
+    headers = [
+        "Métrica / Concepto", 
+        "Gemini 3.5 Flash-Lite", 
+        "Gemini 3.8 Flash (Nivel Pagado)"
+    ]
+    
+    tabla_datos = [
+        ["Ventana de Contexto Máxima", "1,048,576 tokens (1.0M)", "1,048,576 tokens (1.0M)"],
+        ["Precio de Entrada (Input) por 1M", "$0.30 USD", "$1.35 USD (hasta 31/12/2026)"],
+        ["Precio de Salida (Output) por 1M", "$2.50 USD", "$6.75 USD (hasta 31/12/2026)"],
+        ["Caché de Contexto (Lectura) por 1M", "$0.03 USD", "$0.135 USD (hasta 31/12/2026)"],
+        ["Almacenamiento de Caché (por hora)", "No especificado / Estándar", "$0.50 USD / 1M tokens / hora"],
+        ["Uso para mejorar productos (Nivel Gratuito)", "Sí", "Sí"],
+        ["Uso para mejorar productos (Nivel Pagado)", "No", "No"]
+    ]
+
+    # Imprimir la tabla formateada en consola
+    print("==================================================================")
+    print("      COMPARATIVA DE TOKENS Y PRECIOS: GEMINI 3.5 vs 3.8       ")
+    print("==================================================================")
+    print(tabulate(tabla_datos, headers=headers, tablefmt="fancy_grid"))
+
+if __name__ == "__main__":
+    mostrar_tabla_comparativa()
+    
