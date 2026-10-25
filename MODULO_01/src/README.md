@@ -1,1 +1,0 @@
-# Especializaci-n-IA-Skillnest
