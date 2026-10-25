@@ -93,7 +93,7 @@ for prompt in BANCO_DE_PROMPTS:
         respuesta = enviar_peticion(url, body)
         texto = extraer_texto(respuesta)
         try:
-            datos = parsear_respuesta_json(texto)
+            datos = parsear_respuesta_json(texto, prompt["claves_esperadas"])
             if all(clave in datos for clave in prompt["claves_esperadas"]):
                 exitos += 1
         except ValueError as error:
@@ -106,4 +106,3 @@ carpeta_prompts = Path(__file__).resolve().parent / "prompts"
 carpeta_prompts.mkdir(exist_ok=True)
 with open(carpeta_prompts / "registro_resultados.json", "w", encoding="utf-8") as archivo:
     json.dump(registro, archivo, indent=2, ensure_ascii=False)
-

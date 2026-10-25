@@ -88,7 +88,9 @@ def extraer_texto(datos: dict) -> str:
 
     return datos["candidates"][0]["content"]["parts"][0]["text"]
 
-def parsear_respuesta_json(texto):
+def parsear_respuesta_json(
+    texto: str, claves_esperadas: list[str] | None = None
+) -> dict:
     texto_limpio = texto.strip() # Eliminar espacios en blanco al inicio y al final del texto
     texto_limpio = re.sub(r"^```(?:json)?\s*", "", texto_limpio) # Eliminar el bloque de apertura de código JSON
     texto_limpio = re.sub(r"\s*```$", "", texto_limpio) # Eliminar el bloque de cierre de código JSON
@@ -96,7 +98,11 @@ def parsear_respuesta_json(texto):
         datos = json.loads(texto_limpio)# Intentar convertir el texto limpio a un objeto JSON
     except json.JSONDecodeError:
         raise ValueError("La respuesta del modelo no es JSON válido.")# Lanzar un error si el JSON no es válido
-    if "rta" not in datos or "fuente" not in datos:
+    if not isinstance(datos, dict):
+        raise ValueError("La respuesta JSON debe ser un objeto.")
+    if claves_esperadas is None:
+        claves_esperadas = ["rta", "fuente"]
+    if not all(clave in datos for clave in claves_esperadas):
         raise ValueError("La respuesta no tiene la estructura esperada.")# Lanzar un error si la estructura del JSON no es la esperada
     return datos # Devolver el objeto JSON parseado
 
