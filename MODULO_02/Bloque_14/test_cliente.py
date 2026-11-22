@@ -26,10 +26,23 @@ def test_enviar_peticion_exito():
     respuesta_falsa = Mock(status_code=200)
     respuesta_falsa.json.return_value = {"texto": "respuesta simulada"}
 
-    with patch("cliente.requests.post", return_value=respuesta_falsa):
+    with patch("cliente.requests.post", return_value=respuesta_falsa) as post:
         resultado = enviar_peticion({"pregunta": "test"})
 
     assert resultado == {"texto": "respuesta simulada"}
+    assert "key=" not in post.call_args.args[0]
+    assert post.call_args.kwargs["headers"]["x-goog-api-key"] == cliente.GEMINI_API_KEY
+
+def test_consultar_modelo_envia_solo_el_cuerpo():
+    respuesta = {"usageMetadata": {"totalTokenCount": 0}}
+    with patch("cliente.enviar_peticion", return_value=respuesta) as enviar, \
+         patch("cliente.extraer_texto", return_value="Santiago"):
+        assert consultar_modelo("capital", "instrucción") == "Santiago"
+
+    assert enviar.call_args.args[0] == {
+        "systemInstruction": {"parts": [{"text": "instrucción"}]},
+        "contents": [{"parts": [{"text": "capital"}]}],
+    }
 
 def test_con_reintento_espera_entre_intentos():
     intentos = {"n": 0}

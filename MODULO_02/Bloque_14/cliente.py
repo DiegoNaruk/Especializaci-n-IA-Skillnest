@@ -20,10 +20,10 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 URL = (
 	"https://generativelanguage.googleapis.com/v1beta/models/"
-	f"gemini-3.8-flash:generateContent?key={GEMINI_API_KEY}"
+	"gemini-3.8-flash:generateContent"
 )
 
-headers = {"Content-Type": "application/json"}
+headers = {"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY}
 
 
 def enviar_peticion(cuerpo: dict) -> dict:
@@ -70,7 +70,7 @@ def registrar_costo(respuesta: dict) -> float:
 
 
 def consultar_modelo(pregunta: str, system_instruction: str = "") -> str:
-    cuerpo = armar_peticion(pregunta, system_instruction)
+    _, cuerpo = armar_peticion(pregunta, system_instruction)
     try:
         respuesta = con_reintento(lambda: enviar_peticion(cuerpo))
     except TimeoutError:
