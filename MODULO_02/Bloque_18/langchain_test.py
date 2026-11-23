@@ -1,7 +1,15 @@
+import os
+
+from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from cprint import cprint
+
+load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    raise ValueError("Falta configurar GEMINI_API_KEY en el entorno o en el archivo .env.")
 
 # Definición de la plantilla
 # Plantilla para comparar probabilidades de victoria entre dos tenistas en una superficie específica
@@ -25,6 +33,7 @@ cprint.ok(prompt.text)
 
 modelo = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
+    api_key=api_key,
     temperature = 0, # Que tan aleatorio es el resultado 0 poco, 2 muy aleatorio, default 0.7.
 )
 # Generación de la respuesta del modelo

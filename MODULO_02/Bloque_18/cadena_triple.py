@@ -1,3 +1,6 @@
+import os
+
+from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 
@@ -5,7 +8,12 @@ from langchain_core.output_parsers import StrOutputParser
 
 from cprint import cprint
 
-modelo = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite")
+load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    raise ValueError("Falta configurar GEMINI_API_KEY en el entorno o en el archivo .env.")
+
+modelo = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", api_key=api_key)
 
 plantilla_extraccion = PromptTemplate.from_template(
     "Lee el siguiente texto y devuelve solo sus 3 puntos "
