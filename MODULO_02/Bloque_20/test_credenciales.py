@@ -1,0 +1,30 @@
+import runpy
+import sys
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+from langchain_core.messages import AIMessage
+
+
+@pytest.mark.parametrize("script", ["enrutamiento.py", "manejo_errores.py"])
+def test_usa_gemini_api_key(monkeypatch, script):
+    monkeypatch.setenv("GEMINI_API_KEY", "clave-de-prueba")
+    monkeypatch.setenv("GOOGLE_API_KEY", "otra-clave")
+    monkeypatch.delitem(sys.modules, "enrutamiento", raising=False)
+    with patch("dotenv.load_dotenv"), patch(
+        "langchain_google_genai.ChatGoogleGenerativeAI.invoke",
+        return_value=AIMessage(content="sugerencia"),
+    ):
+        resultado = runpy.run_path(str(Path(__file__).parent / script))
+
+    assert resultado["modelo"].google_api_key.get_secret_value() == "clave-de-prueba"
+    if script == "manejo_errores.py":
+        assert resultado["modelo_respaldo"].google_api_key.get_secret_value() == "clave-de-prueba"
+
+
+def test_falla_si_no_hay_gemini_api_key(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    with patch("dotenv.load_dotenv"):
+        with pytest.raises(ValueError, match="Falta configurar GEMINI_API_KEY"):
+            runpy.run_path(str(Path(__file__).parent / "enrutamiento.py"))
