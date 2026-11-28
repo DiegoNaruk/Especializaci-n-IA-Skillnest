@@ -1,0 +1,29 @@
+# Límites de autonomía: Agente de Fletes y Mudanzas (Friendly Flete / Uber de Fletes)
+
+## Herramientas y nivel de riesgo
+
+- consultar_disponibilidad_flete: bajo (solo lectura / consulta operativa de cobertura por comuna; no modifica estado en bases de datos ni ejecuta acciones externas).
+- cotizar_flete: bajo (solo cálculo determinista de tarifa estimada según vehículo, distancia y peso; no genera cobros ni compromete recursos reales).
+- despachar_o_confirmar_flete: alto (escritura irreversible con impacto económico y operativo; asigna un viaje/vehículo o confirma un cobro/compromiso con impacto financiero directo).
+
+## Herramientas que requieren aprobación humana
+
+- despachar_o_confirmar_flete: requiere aprobación humana previa mediante `esperar_aprobacion` (con límite de tiempo vía `select.select()`), porque una asignación o cobro erróneo genera costos operativos reales, reclamos de clientes o choferes y fricción económica difícil de revertir una vez despachado.
+- Las herramientas actuales de solo lectura y cálculo (`consultar_disponibilidad_flete` y `cotizar_flete`) no requieren pausa humana previa porque solo entregan información o estimaciones referenciales sin alterar registros ni mover dinero.
+
+## Revisión de trazas
+
+- Frecuencia: después de cada tanda de pruebas o despliegue del agente, y de forma periódica (por ejemplo, cada 50 interacciones o revisión semanal en `trazas_agente.jsonl`), verificando primero que el archivo no esté vacío y que cada herramienta de riesgo alto tenga al menos un registro real.
+- Qué se busca:
+  - Invocaciones de herramientas ante preguntas generales o fuera de alcance (`intermediate_steps` no vacío cuando no correspondía), señal de `docstring` o `args_schema` demasiado amplios.
+  - Argumentos atípicos o inválidos (`distancia_km` o `peso_kg` negativos/extremos, o comunas inexistentes) que se repiten o provocan respuestas incoherentes.
+  - Observaciones de error recurrentes o bucles de reintento sobre la misma herramienta.
+  - Ejecuciones de herramientas de alto riesgo donde la aprobación humana fue denegada, expiró por timeout o ocurrió sin el contexto esperado.
+
+## Qué hacer ante un comportamiento inesperado
+
+1. **Contener / desactivar la herramienta problemática:** si una herramienta de riesgo medio o alto dispara acciones erróneas o falla repetidamente, retirarla de la lista `herramientas` pasada a `AgentExecutor` (o bloquear su ejecución) hasta estabilizarla.
+2. **Revisar la traza en `trazas_agente.jsonl`:** inspeccionar `entrada`, `acciones` (`herramienta`, `argumentos`, `observacion`) y `respuesta_final` para identificar si el fallo vino del razonamiento del modelo, del `args_schema` o de los datos de entrada.
+3. **Ajustar el `docstring`, el `args_schema` o el `system` prompt:** acotar cuándo debe usarse cada herramienta y aclarar qué preguntas deben responderse sin herramientas.
+4. **Reforzar validaciones y manejo de errores dentro de la `@tool`:** asegurar que los casos límite devuelvan mensajes claros en texto sin lanzar excepciones no controladas, y confirmar con `esperar_aprobacion` cualquier acción de alto riesgo.
+5. **Revalidar:** ejecutar pruebas manuales comprobando `intermediate_steps` y registrar nuevas líneas en `trazas_agente.jsonl` antes de volver a habilitar la herramienta.
